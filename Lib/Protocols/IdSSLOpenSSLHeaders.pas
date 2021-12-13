@@ -23760,8 +23760,7 @@ we have to handle both cases.
   @PKCS12_create := LoadFunctionCLib(fn_PKCS12_create);
   @i2d_PKCS12_bio := LoadFunctionCLib(fn_i2d_PKCS12_bio);
   @PKCS12_free := LoadFunctionCLib(fn_PKCS12_free);
-  @OpenSSL_add_all_algorithms := LoadOldCLib(fn_OpenSSL_add_all_algorithms,
-    fn_OPENSSL_add_all_algorithms_noconf);
+  @OpenSSL_add_all_algorithms := LoadOldCLib(fn_OpenSSL_add_all_algorithms, fn_OPENSSL_add_all_algorithms_noconf, false);
   @OpenSSL_add_all_ciphers := LoadFunctionCLib(fn_OpenSSL_add_all_ciphers);
   @OpenSSL_add_all_digests := LoadFunctionCLib(fn_OpenSSL_add_all_digests);
   @EVP_cleanup := LoadFunctionCLib(fn_EVP_cleanup);
