@@ -5259,8 +5259,9 @@ begin
 
   if not Assigned(Result) then
   begin
-    Result := IndyTextEncoding_8Bit;
-  end;
+//    Result := IndyTextEncoding_8Bit;
+    Result := IndyTextEncoding_UTF8;
+   end;
 end;
 
 procedure WriteStringAsContentType(AStream: TStream; const AStr, AContentType: String;
