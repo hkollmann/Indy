@@ -105,6 +105,9 @@ type
     {$ELSE}
     function GetFieldByName(const Name: string): string; override;
     {$ENDIF}
+    {$IFDEF VCL_13_OR_ABOVE}
+    procedure ExtractAllHeaders(Strings: TStrings); override;
+    {$ENDIF}
     function ReadClient(var Buffer{$IFDEF CLR}: TBytes{$ENDIF}; Count: Integer): Integer; override;
     function ReadString(Count: Integer): {$IFDEF WBB_ANSI}AnsiString{$ELSE}string{$ENDIF}; override;
     {function ReadUnicodeString(Count: Integer): string;}
@@ -236,6 +239,8 @@ const
   INDEX_Connection       = 26;
   INDEX_Cookie           = 27;
   INDEX_Authorization    = 28;
+  INDEX_AuthUserName     = 29;
+  INDEX_AuthMethod       = 30;
 
 { TIdHTTPAppRequest }
 
@@ -436,6 +441,8 @@ begin
     INDEX_Connection      : LValue := FRequestInfo.RawHeaders.Values['Connection'];      {do not localize}
     INDEX_Cookie          : LValue := '';  // not available at present. FRequestInfo.Cookies....;
     INDEX_Authorization   : LValue := FRequestInfo.RawHeaders.Values['Authorization'];   {do not localize}
+    INDEX_AuthUserName    : LValue := '';  // authentication is not performed
+    INDEX_AuthMethod      : LValue := '';  // authentication is not performed
   else
     LValue := '';
   end;
@@ -451,6 +458,13 @@ end;
 function TIdHTTPAppRequest.GetFieldByName(const Name: string): string;
 begin
   Result := FRequestInfo.RawHeaders.Values[Name];
+end;
+{$ENDIF}
+
+{$IFDEF VCL_13_OR_ABOVE}
+procedure TIdHTTPAppRequest.ExtractAllHeaders(Strings: TStrings);
+begin
+  Strings.SetStrings(FRequestInfo.RawHeaders);
 end;
 {$ENDIF}
 
@@ -894,14 +908,14 @@ end;
 
 type
   TIdHTTPWebBrokerBridgeRequestHandler = class(TWebRequestHandler)
-  {$IFDEF HAS_CLASSVARS}
+  {$IFDEF HAS_CLASS_VARS}
   private
    class var FWebRequestHandler: TIdHTTPWebBrokerBridgeRequestHandler;
   {$ENDIF}
   public
     constructor Create(AOwner: TComponent); override;
-    {$IFDEF HAS_CLASSVARS}
-      {$IFDEF HAS_CLASSDESTRUCTOR}
+    {$IFDEF HAS_CLASS_VARS}
+      {$IFDEF HAS_CLASS_DESTRUCTOR}
     class destructor Destroy;
       {$ENDIF}
     {$ENDIF}
@@ -909,7 +923,7 @@ type
     procedure Run(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
   end;
 
-{$IFNDEF HAS_CLASSVARS}
+{$IFNDEF HAS_CLASS_VARS}
 var
   IndyWebRequestHandler: TIdHTTPWebBrokerBridgeRequestHandler = nil;
 {$ENDIF}
@@ -953,18 +967,19 @@ begin
   inherited;
 end;
 
-{$IFDEF HAS_CLASSVARS}
-  {$IFDEF HAS_CLASSDESTRUCTOR}
+{$IFDEF HAS_CLASS_VARS}
+  {$IFDEF HAS_CLASS_DESTRUCTOR}
 class destructor TIdHTTPWebBrokerBridgeRequestHandler.Destroy;
 begin
   FreeAndNil(FWebRequestHandler);
+  WebReq.WebRequestHandlerProc := nil;
 end;
   {$ENDIF}
 {$ENDIF}
 
 function IdHTTPWebBrokerBridgeRequestHandler: TWebRequestHandler;
 begin
-  {$IFDEF HAS_CLASSVARS}
+  {$IFDEF HAS_CLASS_VARS}
   if not Assigned(TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler) then
     TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler := TIdHTTPWebBrokerBridgeRequestHandler.Create(nil);
   Result := TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler;
@@ -983,7 +998,7 @@ begin
     RunWebModuleClass(AThread, ARequestInfo, AResponseInfo)
   end else
   begin
-    {$IFDEF HAS_CLASSVARS}
+    {$IFDEF HAS_CLASS_VARS}
     TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler.Run(AThread, ARequestInfo, AResponseInfo);
     {$ELSE}
     IndyWebRequestHandler.Run(AThread, ARequestInfo, AResponseInfo);
@@ -1051,14 +1066,16 @@ end;
 
 initialization
   WebReq.WebRequestHandlerProc := IdHTTPWebBrokerBridgeRequestHandler;
-{$IFDEF HAS_CLASSVARS}
-  {$IFNDEF HAS_CLASSDESTRUCTOR}
+{$IFDEF HAS_CLASS_VARS}
+  {$IFNDEF HAS_CLASS_DESTRUCTOR}
 finalization
   FreeAndNil(TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler);
+  WebReq.WebRequestHandlerProc := nil;
   {$ENDIF}
 {$ELSE}
 finalization
   FreeAndNil(IndyWebRequestHandler);
+  WebReq.WebRequestHandlerProc := nil;
 {$ENDIF}
 
 end.

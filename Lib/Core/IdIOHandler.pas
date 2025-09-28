@@ -413,6 +413,8 @@ uses
 (*$HPPEMIT '#pragma alias "@Idiohandler@TIdIOHandler@SetPortW$qqri"="@Idiohandler@TIdIOHandler@SetPort$qqri"' *)
 (*$HPPEMIT '#endif' *)
 (*$HPPEMIT '#endif' *)
+// TODO: when compiling with bcc64x, use this pragma instead:
+// #pragma comment(linker, "/alternatename:<name1>=<name2>")
 
 const
   GRecvBufferSizeDefault = 32 * 1024;
@@ -1275,7 +1277,7 @@ end;
 {$I IdDeprecatedImplBugOff.inc}
 function TIdIOHandler.ReadWord(AConvert: Boolean = True): UInt16;
 {$I IdDeprecatedImplBugOn.inc}
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadUInt16(AConvert);
 end;
@@ -1289,7 +1291,7 @@ end;
 {$I IdDeprecatedImplBugOff.inc}
 function TIdIOHandler.ReadSmallInt(AConvert: Boolean = True): Int16;
 {$I IdDeprecatedImplBugOn.inc}
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadInt16(AConvert);
 end;
@@ -1382,7 +1384,7 @@ end;
 {$I IdDeprecatedImplBugOff.inc}
 function TIdIOHandler.ReadLongInt(AConvert: Boolean): Int32;
 {$I IdDeprecatedImplBugOn.inc}
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadInt32(AConvert);
 end;
@@ -1411,7 +1413,7 @@ end;
 {$I IdDeprecatedImplBugOff.inc}
 function TIdIOHandler.ReadLongWord(AConvert: Boolean): UInt32;
 {$I IdDeprecatedImplBugOn.inc}
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadUInt32(AConvert);
 end;
@@ -1419,7 +1421,7 @@ end;
 function TIdIOHandler.ReadLn(AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadLn(LF, IdTimeoutDefault, -1, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
@@ -1429,7 +1431,7 @@ end;
 function TIdIOHandler.ReadLn(ATerminator: string; AByteEncoding: IIdTextEncoding
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadLn(ATerminator, IdTimeoutDefault, -1, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
@@ -1559,7 +1561,7 @@ function TIdIOHandler.ReadLnRFC(var VMsgEnd: Boolean;
   AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := ReadLnRFC(VMsgEnd, LF, '.', AByteEncoding   {do not localize}
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
@@ -1841,7 +1843,7 @@ begin
 end;
 
 procedure TIdIOHandler.WriteLn(AEncoding: IIdTextEncoding = nil);
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   {$IFNDEF VCL_6_OR_ABOVE}
   // RLebeau: in Delphi 5, explicitly specifying the nil value for the third
@@ -2127,6 +2129,7 @@ begin
 end;
 
 procedure TIdIOHandler.RaiseConnClosedGracefully;
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   (* ************************************************************* //
   ------ If you receive an exception here, please read. ----------
@@ -2408,7 +2411,7 @@ end;
 procedure TIdIOHandler.Capture(ADest: TStream; AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   );
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Capture(ADest, '.', True, AByteEncoding     {do not localize}
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
@@ -2420,7 +2423,7 @@ procedure TIdIOHandler.Capture(ADest: TStream; out VLineCount: Integer;
   AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   );
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   PerformCapture(ADest, VLineCount, ADelim, AUsesDotTransparency, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
@@ -2444,7 +2447,7 @@ procedure TIdIOHandler.Capture(ADest: TStrings; out VLineCount: Integer;
   AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   );
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   PerformCapture(ADest, VLineCount, ADelim, AUsesDotTransparency, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
@@ -2475,13 +2478,13 @@ begin
 end;
 
 procedure TIdIOHandler.InputBufferToStream(AStream: TStream; AByteCount: Integer = -1);
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   FInputBuffer.ExtractToStream(AStream, AByteCount);
 end;
 
 function TIdIOHandler.InputBufferIsEmpty: Boolean;
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := FInputBuffer.Size = 0;
 end;
@@ -2564,7 +2567,7 @@ begin
 end;
 
 function TIdIOHandler.WriteBufferingActive: Boolean;
-{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+  {$IFDEF USE_CLASS_INLINE}inline;{$ENDIF}
 begin
   Result := FWriteBuffer <> nil;
 end;

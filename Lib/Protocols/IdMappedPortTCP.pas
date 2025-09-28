@@ -120,10 +120,9 @@ interface
 
 uses
   Classes,
-  IdAssignedNumbers,
   IdContext,
   IdCustomTCPServer,
-  IdGlobal, IdStack, IdTCPConnection, IdTCPServer, IdYarn, SysUtils;
+  IdGlobal, IdStack, IdTCPConnection, IdYarn, SysUtils;
 
 type
   TIdMappedPortTCP = class;
@@ -202,8 +201,7 @@ type
 Implementation
 
 uses
-  IdException,
-  IdIOHandler, IdIOHandlerSocket, IdResourceStrings,IdStackConsts, IdTCPClient;
+  IdIOHandler, IdIOHandlerSocket, IdTCPClient;
 
 procedure TIdMappedPortTCP.InitComponent;
 begin
@@ -213,7 +211,12 @@ end;
 
 procedure TIdMappedPortTCP.ContextCreated(AContext: TIdContext);
 begin
+  // TODO: TIdMappedPortContext.Server is separate from TIdServerContext.Server.
+  // TIdMappedPortContext.Server should be removed and TIdMappedPortContext
+  // should be updated to return TIdServerContext.Server casted to TIdMappedPortTCP...
   TIdMappedPortContext(AContext).Server := Self;
+
+  inherited ContextCreated(AContext);
 end;
 
 procedure TIdMappedPortTCP.DoBeforeConnect(AContext: TIdContext);

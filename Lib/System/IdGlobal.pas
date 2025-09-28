@@ -1955,15 +1955,18 @@ function IndyWindowsPlatform: Integer;
 function IndyCheckWindowsVersion(const AMajor: Integer; const AMinor: Integer = 0): Boolean;
 {$ENDIF}
 
-// For non-Nextgen compilers: IdDisposeAndNil is the same as FreeAndNil()
+// For non-Nextgen compilers: IdDisposeAndNil is the same as FreeAndNil().
 // For Nextgen compilers: IdDisposeAndNil calls TObject.DisposeOf() to ensure
 // the object is freed immediately even if it has active references to it,
-// for instance when freeing an Owned component
+// for instance when freeing an Owned component.
 
-// Embarcadero changed the signature of FreeAndNil() in 10.4 Denali:
+// Embarcadero changed the signature of FreeAndNil() in 10.4 Sydney:
 // procedure FreeAndNil(const [ref] Obj: TObject); inline;
 
-// TODO: Change the signature of IdDisposeAndNil() to match FreeAndNil() in 10.4+...
+// FreePascal changed the signature of FreeAndNil() on May 13 2025 (3.3.1?):
+// procedure FreeAndNil(constref obj: TObject);
+
+// TODO: Change the signature of IdDisposeAndNil() to match FreeAndNil() in Delphi 10.4+ and FPC 3.3.1+...
 procedure IdDisposeAndNil(var Obj); {$IFDEF USE_INLINE}inline;{$ENDIF}
 
 //RLebeau: FPC does not provide mach_timebase_info() and mach_absolute_time() yet...
@@ -4753,7 +4756,8 @@ end;
 {$ENDIF}
 
 procedure IndyRaiseLastError;
-{$IFDEF USE_INLINE}inline;{$ENDIF}
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   {$IFNDEF HAS_RaiseLastOSError}
   RaiseLastWin32Error;
@@ -4765,6 +4769,7 @@ end;
 {$IFDEF HAS_Exception_RaiseOuterException}
 procedure IndyRaiseOuterException(AOuterException: Exception);
   {$IFDEF USE_INLINE}inline;{$ENDIF}
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   Exception.RaiseOuterException(AOuterException);
 end;
@@ -4777,6 +4782,7 @@ end;
 // rather than inside this function...
     {$IFDEF HAS_System_ReturnAddress}
 procedure IndyRaiseOuterException(AOuterException: Exception);
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   raise AOuterException at ReturnAddress;
 end;
@@ -4834,6 +4840,7 @@ end;
   {$ELSE}
 // Not Delphi, so just raise the exception as-is until we know what else to do with it...
 procedure IndyRaiseOuterException(AOuterException: Exception);
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   raise AOuterException;
 end;
@@ -5545,7 +5552,18 @@ begin
   ADestEncoding.GetBytes(LChars, 0, 1, VDest, ADestIndex);
   {$ELSE}
   EnsureEncoding(ASrcEncoding, encOSDefault);
-  LChars := ASrcEncoding.GetChars(RawToBytes(ASource, 1));
+  LChars := ASrcEncoding.GetChars(
+    {$IFNDEF VCL_6_OR_ABOVE}
+    // RLebeau: for some reason, Delphi 5 causes a "There is no overloaded
+    // version of 'GetChars' that can be called with these arguments" compiler
+    // error if the PByte type-cast is used, even though GetChars() actually
+    // expects a PByte as input.  Must be a compiler bug, as it compiles fine
+    // in Delphi 6.  So, converting to TIdBytes until I find a better solution...
+    RawToBytes(ASource, 1)
+    {$ELSE}
+    PByte(@ASource), 1
+    {$ENDIF}
+  );
   ADestEncoding.GetBytes(LChars, 0, Length(LChars), VDest, ADestIndex);
   {$ENDIF}
 end;
@@ -5769,7 +5787,19 @@ begin
     ADestEncoding.GetBytes(ASource, ASourceIndex, LLength, VDest, ADestIndex);
     {$ELSE}
     EnsureEncoding(ASrcEncoding, encOSDefault);
-    LTmp := ASrcEncoding.GetChars(RawToBytes(ASource[ASourceIndex], LLength)); // convert to Unicode
+    // convert to Unicode
+    LTmp := ASrcEncoding.GetChars(
+      {$IFNDEF VCL_6_OR_ABOVE}
+      // RLebeau: for some reason, Delphi 5 causes a "There is no overloaded
+      // version of 'GetChars' that can be called with these arguments" compiler
+      // error if the PByte type-cast is used, even though GetChars() actually
+      // expects a PByte as input.  Must be a compiler bug, as it compiles fine
+      // in Delphi 6.  So, converting to TIdBytes until I find a better solution...
+      RawToBytes(ASource[ASourceIndex], LLength)
+      {$ELSE}
+      PByte(@ASource[ASourceIndex]), LLength
+      {$ENDIF}
+    );
     ADestEncoding.GetBytes(LTmp, 0, Length(LTmp), VDest, ADestIndex);
     {$ENDIF}
   end;
@@ -6209,12 +6239,32 @@ end;
 
 function GetTickDiff64(const AOldTickCount, ANewTickCount: TIdTicks): TIdTicks;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$IFNDEF VCL_6_OR_ABOVE}
+var
+  // Delphi 5 seems to have a problem with the Int64 calculations
+  // below on a temporary, so breaking up the calculations...
+  d: TIdTicks;
+{$ENDIF}
 begin
   {This is just in case the TickCount rolled back to zero}
   if ANewTickCount >= AOldTickCount then begin
+    {$IFNDEF VCL_6_OR_ABOVE}
+    d := ANewTickCount;
+    Dec(d, AOldTickCount);
+    Result := d;
+    {$ELSE}
     Result := TIdTicks(ANewTickCount - AOldTickCount);
+    {$ENDIF}
   end else begin
+    {$IFNDEF VCL_6_OR_ABOVE}
+    d := High(TIdTicks);
+    Dec(d, AOldTickCount);
+    Inc(d, ANewTickCount);
+    Inc(d);
+    Result := d;
+    {$ELSE}
     Result := TIdTicks(((High(TIdTicks) - AOldTickCount) + ANewTickCount) + 1);
+    {$ENDIF}
   end;
 end;
 
@@ -7538,7 +7588,8 @@ begin
 end;
 
 procedure ToDo(const AMsg: string);
-{$IFDEF USE_INLINE}inline;{$ENDIF}
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   raise EIdException.Create(AMsg); // TODO: create a new Exception class for this
 end;
@@ -7881,7 +7932,7 @@ begin
   // RLebeau 1/15/2022: the value returned by OffsetFromUTC() is meant to be *subtracted*
   // from a local time, and *added* to a UTC time.  However, the value returned by
   // FPC's GetLocalTimeOffset() is the opposite - it is meant to be *added* to local time,
-  // and *subtracted* from UTC time.  So, we need to flip its sign here... 
+  // and *subtracted* from UTC time.  So, we need to flip its sign here...
 
   Result := -1 * (GetLocalTimeOffset() / 60 / 24);
     {$ELSE}
@@ -8452,7 +8503,19 @@ begin
   LChars[0] := AValue;
   {$ELSE}
   EnsureEncoding(ASrcEncoding, encOSDefault);
-  LChars := ASrcEncoding.GetChars(RawToBytes(AValue, 1));  // convert to Unicode
+  // convert to Unicode
+  LChars := ASrcEncoding.GetChars(
+    {$IFNDEF VCL_6_OR_ABOVE}
+    // RLebeau: for some reason, Delphi 5 causes a "There is no overloaded
+    // version of 'GetChars' that can be called with these arguments" compiler
+    // error if the PByte type-cast is used, even though GetChars() actually
+    // expects a PByte as input.  Must be a compiler bug, as it compiles fine
+    // in Delphi 6.  So, converting to TIdBytes until I find a better solution...
+    RawToBytes(AValue, 1)
+    {$ELSE}
+    PByte(@AValue), 1
+    {$ENDIF}
+  );
   {$ENDIF}
   Assert(Length(Bytes) >= ADestEncoding.GetByteCount(LChars));
   ADestEncoding.GetBytes(LChars, 0, Length(LChars), Bytes, 0);
@@ -10045,12 +10108,21 @@ begin
 end;
 {$ENDIF}
 
-// Embarcadero changed the signature of FreeAndNil() in 10.4 Denali...
 {$UNDEF HAS_FreeAndNil_TObject_Param}
 {$IFNDEF USE_OBJECT_ARC}
   {$IFDEF DCC}
+    // Embarcadero changed the signature of FreeAndNil() in 10.4 Sydney...
     {$IFDEF VCL_10_4_OR_ABOVE}
       {$DEFINE HAS_FreeAndNil_TObject_Param}
+    {$ENDIF}
+  {$ELSE}
+    {$IFDEF FPC}
+      // FreePascal changed the signature of FreeAndNil() on May 13 2025 (3.3.1?)...
+      {$IFDEF FPC_3_3_1_OR_ABOVE}
+        {$IFNDEF CPULLVM} // the signature is not changed for LLVM
+          {$DEFINE HAS_FreeAndNil_TObject_Param}
+        {$ENDIF}
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}

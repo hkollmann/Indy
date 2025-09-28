@@ -132,7 +132,7 @@ interface
 
 uses
   Classes,
-  IdAssignedNumbers, IdException, IdExceptionCore,
+  IdException, IdExceptionCore,
   IdEMailAddress, IdGlobal, IdHeaderList,
   IdDNSResolver, IdMessage, IdMessageClient, IdBaseComponent,
   IdSMTPBase, IdReplySMTP, SysUtils;
@@ -558,6 +558,7 @@ begin
 end;
 
 procedure TIdSMTPRelay.SetHost(const Value: String);
+  {$IFDEF USE_NORETURN}noreturn;{$ENDIF}
 begin
   raise EIdDirectSMTPCannotAssignHost.Create(RSDirSMTPCantAssignHost);
 end;
